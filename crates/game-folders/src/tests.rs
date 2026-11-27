@@ -305,6 +305,39 @@ fn heroic_and_lutris_installs_are_found_where_their_files_name_them() {
     );
 }
 
+#[test]
+fn lutris_paths_with_yaml_comments_are_found() {
+    let s = Scratch::new("lutris-comments");
+    let home = s.home(System::Linux);
+    let game = s.game("Games/FNV#1", "Data", "FalloutNV.esm");
+    s.file(
+        "home/.config/lutris/games/fnv.yml",
+        &format!("game:\n  game_path: {}  # GOG copy\n", game.display()),
+    );
+    assert_eq!(
+        games(&home),
+        [Found {
+            store: "Lutris",
+            folder: game
+        }]
+    );
+}
+
+#[test]
+fn yaml_comments_end_plain_paths_and_preserve_literal_hashes() {
+    for (value, path) in [
+        ("/p#one   # note", "/p#one"),
+        ("/p/long\n    name # note", "/p/long name"),
+        ("/p/long\n    # note", "/p/long"),
+        ("'/p #one' # note", "/p #one"),
+        ("\"/p #one\" # note", "/p #one"),
+        ("# note\n    '/p #one'", "/p #one"),
+    ] {
+        assert_eq!(yaml_values(&format!("prefix: {value}\n"), "prefix"), [path]);
+    }
+    assert!(yaml_values("prefix: # unset\n", "prefix").is_empty());
+}
+
 fn json_text(path: &Path) -> String {
     path.display().to_string().replace('\\', "\\\\")
 }

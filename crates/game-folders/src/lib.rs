@@ -476,22 +476,24 @@ pub fn yaml_values(text: &str, key: &str) -> Vec<String> {
         else {
             continue;
         };
-        let value = value.trim();
-        let deeper: Vec<&str> = lines[i + 1..]
+        let deeper = lines[i + 1..]
             .iter()
             .copied()
-            .take_while(|l: &&str| !l.trim().is_empty() && indent(l) > indent(line))
-            .map(str::trim)
-            .collect();
+            .take_while(|l| !l.trim().is_empty() && indent(l) > indent(line))
+            .map(str::trim);
+        let mut parts = std::iter::once(value.trim()).chain(deeper);
+        let Some(value) = parts.find(|part| !part.is_empty() && !part.starts_with('#')) else {
+            continue;
+        };
         let found = if let Some(quoted) = value.strip_prefix('"') {
             let all = std::iter::once(quoted)
-                .chain(deeper.iter().copied())
+                .chain(parts)
                 .collect::<Vec<_>>()
                 .join("\n");
             yaml_double_quoted(&all)
         } else if let Some(quoted) = value.strip_prefix('\'') {
             let all = std::iter::once(quoted)
-                .chain(deeper.iter().copied())
+                .chain(parts)
                 .collect::<Vec<_>>()
                 .join(" ");
             let mut s = String::new();
@@ -512,10 +514,16 @@ pub fn yaml_values(text: &str, key: &str) -> Vec<String> {
             }
             closed
         } else {
-            let mut s = value.to_string();
-            for more in &deeper {
-                s.push(' ');
-                s.push_str(more);
+            let mut s = std::iter::once(value)
+                .chain(parts)
+                .collect::<Vec<_>>()
+                .join(" ");
+            // A separated '#' starts a comment. One inside a plain path is literal.
+            if let Some((at, _)) = s
+                .match_indices('#')
+                .find(|(i, _)| s[..*i].ends_with([' ', '\t']))
+            {
+                s.truncate(s[..at].trim_end_matches([' ', '\t']).len());
             }
             Some(s)
         };
