@@ -777,7 +777,7 @@ pub fn fn_006eae40(e: &mut Engine, this: Ptr) {
                 // the preceding out-argument at EBP-0x38 is not task data.
                 let task_data = Ptr::new(e.mem.u32(task_out));
                 if e.call(0x005d_c980, &args![task_data]).bool() {
-                    let built = fn_006ea350(e, task_data);
+                    let built = e.call(0x006e_a350, &args![task_data]).i32();
                     let total = e.mem.u32(locals.addr() + 0x48).wrapping_add(built as u32);
                     e.mem.set_u32(locals.addr() + 0x48, total);
                     if total > 10 {

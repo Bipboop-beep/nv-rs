@@ -2315,6 +2315,65 @@ fn entry_14_of() {
 }
 
 #[test]
+fn build_pending() {
+    Diff::new(entry!(0x006e_a350, pathing::ray_build::build_pending(Ptr) -> i32))
+        .family(&pathing::PATHING)
+        .family(&leaf::LEAVES)
+        .family(&engine_typed::dispatch::DISPATCH)
+        .family(&engine_typed::multibound::MULTIBOUND)
+        .inputs(&[
+            Input::Of(&[0, 1, 4]),
+            Input::Of(&[0, 1, 15]),
+            Input::Of(&[5, 11, 0xffff_ffff, 0x8000_0000]),
+        ])
+        .setup(|e, case| {
+            let task = e.mem.alloc(0x60);
+            let requests = e.mem.alloc(16);
+            let paths = e.mem.alloc(16);
+            e.mem.set_u32(task + 0x20, 0x1234);
+            e.mem.set_u32(task + 0x24, 1);
+            e.mem.set_u32(task + 0x44, requests);
+            e.mem.set_u32(task + 0x48, case.word(0));
+            e.mem.set_u32(task + 0x54, paths);
+            for i in 0..4 {
+                let path = e.mem.alloc(8);
+                e.mem.set_u32(path + 4, case.word(1) & (1 << i));
+                e.mem.set_u32(paths + 4 * i, path);
+                let request = e.mem.alloc(8);
+                e.mem.set_u32(request, case.word(2));
+                e.mem.set_u32(requests + 4 * i, request);
+            }
+            e.register(engine_core::sync_direct::GET_CURRENT_THREAD_ID, |_, _| {
+                ret(0x1234)
+            });
+            let replacement = e.mem.alloc(8);
+            e.register_double(0x006e_61a0, move |e, a| {
+                // If this started as a single pending path, construction grows
+                // the request array and changes the path in its first slot.
+                if e.mem.u32(task + 0x48) == 1 {
+                    e.mem.set_u32(task + 0x48, 4);
+                    e.mem.set_u32(paths, replacement);
+                }
+                e.mem.set_u32(a[0] + 0x90, 1);
+                ret(a[0])
+            });
+            e.register(0x006e_6320, |e, a| {
+                let contribution = e.mem.u32(a[1]);
+                e.mem.set_u32(a[0] + 0x88, contribution);
+                e.mem.set_u32(a[2] + 4, 1);
+                ret(0)
+            });
+            e.register(0x006e_62b0, |e, a| {
+                e.mem.set_u32(a[0] + 0x90, 0);
+                ret(0)
+            });
+            vec![task]
+        })
+        .run()
+        .assert_same();
+}
+
+#[test]
 fn free_data() {
     Diff::new(entry!(0x006a_8500, search::free_data(Ptr<_>)))
         .common()

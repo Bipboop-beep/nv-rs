@@ -41,6 +41,7 @@ pub mod location;
 pub mod navmesh;
 pub mod point;
 pub mod pov;
+pub mod ray_build;
 pub mod search;
 
 /// This family's bit: what each `typed_call!` of it names.
@@ -176,6 +177,7 @@ fn funcs() -> Vec<(u32, AbiFn)> {
         entry!(0x006d_6f40, navmesh::potential_info(u32) -> u32),
         entry!(0x006d_6f60, navmesh::potential_info_in_world(u32, u32) -> u32),
         // The search.
+        entry!(0x006e_a350, ray_build::build_pending(Ptr) -> i32),
         entry!(0x006b_9710, search::sort_key(Ptr<SortNode>) -> f32),
         entry!(0x006b_9130, search::second_float(Ptr<SortNode>) -> f64),
         entry!(0x0069_ef80, search::request_radius(Ptr) -> f64),
