@@ -42,6 +42,7 @@ pub mod navmesh;
 pub mod point;
 pub mod pov;
 pub mod search;
+pub mod task_group;
 
 /// This family's bit: what each `typed_call!` of it names.
 pub const FAMILY: FamilyId = FamilyId::new(7);
@@ -175,6 +176,8 @@ fn funcs() -> Vec<(u32, AbiFn)> {
         entry!(0x006b_7850, navmesh::info_in_world(Ptr, Ptr, u32) -> u32),
         entry!(0x006d_6f40, navmesh::potential_info(u32) -> u32),
         entry!(0x006d_6f60, navmesh::potential_info_in_world(u32, u32) -> u32),
+        entry!(0x006e_abe0, task_group::initialize(Ptr) -> bool),
+        entry!(0x006e_ac40, task_group::destroy(Ptr)),
         // The search.
         entry!(0x006b_9710, search::sort_key(Ptr<SortNode>) -> f32),
         entry!(0x006b_9130, search::second_float(Ptr<SortNode>) -> f64),

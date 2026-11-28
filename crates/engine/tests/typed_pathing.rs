@@ -2652,6 +2652,41 @@ fn construct_32s() {
 }
 
 #[test]
+fn task_group_initialize() {
+    Diff::new(entry!(0x006e_abe0, pathing::task_group::initialize(Ptr) -> bool))
+        .family(&pathing::PATHING)
+        .inputs(&[Input::Of(&[0x100, 0xff]), Input::Of(&[0x100, 0xff])])
+        .setup(|e, case| {
+            let task = e.mem.alloc(0xc38);
+            for offset in [0xc24, 0xc28, 0xc34] {
+                e.mem.set_u32(task + offset, 0x1234_5678);
+            }
+            let create = case.word(0);
+            let start = case.word(1);
+            e.register(0x00b0_0a00, |_, _| ret(0x1234));
+            e.register_double(0x00b0_0a80, move |_, _| ret(create));
+            e.register_double(0x006c_08e0, move |_, _| ret(start));
+            vec![task]
+        })
+        .run()
+        .assert_same();
+}
+
+#[test]
+fn task_group_destroy() {
+    Diff::new(entry!(0x006e_ac40, pathing::task_group::destroy(Ptr)))
+        .family(&pathing::PATHING)
+        .setup(|e, _| {
+            e.register(0x006c_09d0, |_, _| ret(0));
+            e.register(0x00b0_0a00, |_, _| ret(0x2345));
+            e.register(0x00b0_0c20, |_, _| ret(0));
+            vec![0x4567]
+        })
+        .run()
+        .assert_same();
+}
+
+#[test]
 fn slots_new() {
     Diff::new(entry!(0x006b_3de0, search::slots_new(Ptr) -> Ptr))
         .common()

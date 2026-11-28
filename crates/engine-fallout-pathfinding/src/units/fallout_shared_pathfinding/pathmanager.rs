@@ -1173,7 +1173,7 @@ pub fn fn_006eb8c0(e: &mut Engine, this: Ptr) -> bool {
             path_manager_impl_construct(e, Ptr::new(allocation))
         };
         e.mem.set_u32(this.addr(), implementation.addr());
-        let initialized = path_manager_impl_initialize(e, implementation);
+        let initialized = e.call(0x006e_abe0, &args![implementation]).bool();
         e.call(0x0040_4ee0, &args![guard]);
         initialized
     })
@@ -1182,7 +1182,7 @@ pub fn fn_006eb8c0(e: &mut Engine, this: Ptr) -> bool {
 // Translated from 006eb980 (decompiled, FalloutNV.exe 1.4.0.525)
 /// Stops the task group, reloads the owned implementation, deletes it and clears ownership.
 pub fn fn_006eb980(e: &mut Engine, this: Ptr) {
-    path_manager_impl_destroy(e, Ptr::new(e.mem.u32(this.addr())));
+    e.call(0x006e_ac40, &args![e.mem.u32(this.addr())]);
     let implementation = e.mem.u32(this.addr());
     if implementation != 0 {
         fn_006eb890(e, Ptr::new(implementation), 1);
