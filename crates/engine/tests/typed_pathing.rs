@@ -2670,6 +2670,73 @@ fn slots_new() {
 }
 
 #[test]
+fn linked_message_queue_push() {
+    Diff::new(entry!(
+        0x006e_c260,
+        pathing::message_queue::try_push(Ptr<_>, u32) -> bool
+    ))
+    .family(&pathing::PATHING)
+    .inputs(&[Input::Of(&[0, 1, 2]), Input::Of(&[0, 1])])
+    .setup(|e, case| {
+        let queue = e.mem.alloc(0x14);
+        let head = e.mem.alloc(12);
+        let pool = e.mem.alloc(8);
+        let node = e.mem.alloc(12);
+        e.mem.set_u32(node + 8, 0xaabbccdd);
+        e.mem.set_u32(pool, node);
+        e.mem.set_u32(pool + 4, u32::from(case.word(0) == 2));
+        e.mem
+            .set_u32(queue + 8, if case.word(0) == 0 { 0 } else { pool });
+        e.mem
+            .set_u32(queue + 12, if case.word(1) == 0 { 0 } else { head });
+        e.mem.set_u32(queue + 16, head + 8);
+        e.register(0x006e_cd00, |e, a| {
+            e.mem.set_u32(a[1], e.mem.u32(a[0]));
+            ret(e.mem.u32(a[0] + 4))
+        });
+        vec![queue, 0x1234]
+    })
+    .run()
+    .assert_same();
+}
+
+#[test]
+fn linked_message_queue_pop() {
+    Diff::new(entry!(
+        0x006e_c2e0,
+        pathing::message_queue::try_pop(Ptr<_>, Ptr) -> bool
+    ))
+    .family(&pathing::PATHING)
+    .family(&leaf::LEAVES)
+    .translation_calls_plainly(&[0x006e_aa00])
+    .inputs(&[Input::Of(&[0, 1, 2])])
+    .setup(|e, case| {
+        let queue = e.mem.alloc(0x14);
+        let head = e.mem.alloc(12);
+        let next = if case.word(0) == 2 {
+            e.mem.alloc(12)
+        } else {
+            0
+        };
+        let pool = e.mem.alloc(4);
+        e.mem.set_u32(queue + 8, pool);
+        e.mem
+            .set_u32(queue + 12, if case.word(0) == 0 { 0 } else { head });
+        e.mem.set_u32(queue + 16, head + 8);
+        e.mem.set_u32(head, 0x87654321);
+        e.mem.set_u32(head + 4, 0x12345678);
+        e.mem.set_u32(head + 8, next);
+        e.register(0x006e_cb10, |e, a| {
+            e.mem.set_u32(a[0], e.mem.u32(a[1]));
+            ret(0)
+        });
+        vec![queue, e.mem.alloc(8)]
+    })
+    .run()
+    .assert_same();
+}
+
+#[test]
 fn queue_new() {
     for base in BY_THREAD {
         Diff::new(entry!(0x006b_9470, search::queue_new(Ptr<_>) -> Ptr<_>))

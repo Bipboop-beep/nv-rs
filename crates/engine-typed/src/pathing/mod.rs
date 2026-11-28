@@ -38,6 +38,7 @@ use layout::{
 
 pub mod layout;
 pub mod location;
+pub mod message_queue;
 pub mod navmesh;
 pub mod point;
 pub mod pov;
@@ -189,6 +190,8 @@ fn funcs() -> Vec<(u32, AbiFn)> {
         entry!(0x006f_4790, search::scaled_cost(Ptr, Ptr<SortNode>) -> u32),
         entry!(0x006a_1f90, search::scrap_new(u32, Ptr) -> u32),
         entry!(0x006a_79c0, search::is_goal(Ptr<AStarSearch>, Ptr) -> bool),
+        entry!(0x006e_c260, message_queue::try_push(Ptr<message_queue::Queue>, u32) -> bool),
+        entry!(0x006e_c2e0, message_queue::try_pop(Ptr<message_queue::Queue>, Ptr) -> bool),
         entry!(0x006b_8c20, search::info_is_goal(Ptr, Ptr) -> u32),
         entry!(0x006a_6eb0, search::location_center(Ptr<SearchLocation>, Ptr<NiPoint3>) -> Ptr<NiPoint3>),
         entry!(0x006a_7ad0, search::element(Ptr, u32) -> u32),
